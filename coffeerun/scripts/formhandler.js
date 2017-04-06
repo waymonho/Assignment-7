@@ -14,43 +14,28 @@
     }
 
     FormHandler.prototype.addSubmitHandler = function(fn) {
+        console.log('Setting submit handler for form');
         this.$formElement.on('submit', function(event) {
             event.preventDefault();
-
             var data = {};
             $(this).serializeArray().forEach(function(item) {
                 data[item.name] = item.value;
                 console.log(item.name + ' is ' + item.value);
             });
             console.log(data);
-            fn(data)
-                .then(function() {
-                    this.reset();
-                    this.elements[0].focus();
-                }.bind(this));
+            fn(data);
+            this.reset();
+            this.elements[0].focus();
         });
     };
 
     FormHandler.prototype.addInputHandler = function(fn) {
+        console.log('Setting input handler for form');
         this.$formElement.on('input', '[name="emailAddress"]', function(event) {
             var emailAddress = event.target.value;
             var message = '';
             if (fn(emailAddress)) {
                 event.target.setCustomValidity('');
-                //Email Validation
-                var SERVER_URL = 'http://localhost:3002/coffeeorders';
-                $.get(SERVER_URL, function(serverResponse) {
-                    var emails = [];
-                    for (var i in serverResponse) {
-                        emails.push(serverResponse[i].emailAddress);
-                    }
-                    if (emails.indexOf(emailAddress) != -1) {
-                        message = 'This email has already been registered!';
-                        event.target.setCustomValidity(message);
-                    } else {
-                        event.target.setCustomValidity('');
-                    }
-                });
             } else {
                 message = emailAddress + ' is not an authorized email address!';
                 event.target.setCustomValidity(message);

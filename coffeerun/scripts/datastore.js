@@ -1,38 +1,85 @@
 (function(window) {
     'use strict';
     var App = window.App || {};
-    var Promise = window.Promise;
+    var $ = window.jQuery;
 
-    function DataStore() {
-        console.log('running the DataStore functon');
-        this.data = {};
+    function FormHandler(selector) {
+        if (!selector) {
+            throw new Error('No selector provided');
+        }
+        this.$formElement = $(selector);
+        if (this.$formElement.length === 0) {
+            throw new Error('Could not find element with selector: ' + selector);
+        }
     }
 
-    function promiseResolvedWith(value) {
-        var promise = new Promise(function(resolve, reject) {
-            resolve(value);
+    FormHandler.prototype.addSubmitHandler = function(fn) {
+        console.log('Setting submit handler for form');
+        this.$formElement.on('submit', function(event) {
+            event.preventDefault();
+            var data = {};
+            $(this).serializeArray().forEach(function(item) {
+                data[item.name] = item.value;
+                console.log(item.name + ' is ' + item.value);
+            });
+            console.log(data);
+            fn(data);
+            this.reset();
+            this.elements[0].focus();
         });
-        return promise;
-    }
-
-    DataStore.prototype.add = function(key, val) {
-        this.data[key] = val;
-        return promiseResolvedWith(null);
     };
 
-    DataStore.prototype.get = function(key) {
-        return promiseResolvedWith(this.data[key]);
+    FormHandler.prototype.addInputHandler = function(fn) {
+        console.log('Setting input handler for form');
+        this.$formElement.on('input', '[name="emailAddress"]', function(event) {
+            var emailAddress = event.target.value;
+            var message = '';
+            if (fn(emailAddress)) {
+                event.target.setCustomValidity('');
+            } else {
+                message = emailAddress + ' is not an authorized email address!';
+                event.target.setCustomValidity(message);
+            }
+        });
     };
 
-    DataStore.prototype.getAll = function() {
-        return promiseResolvedWith(this.data);
+    //Silver Challenge - Check Decaf & Caffeine Strength
+    FormHandler.prototype.decafInputHandler = function(fn) {
+        var coffee;
+        this.$formElement.on('input', '[name="coffee"]', function(event) {
+            coffee = event.target;
+            var data = {};
+            this.$formElement.serializeArray().forEach(function(item) {
+                if (item.name === 'coffee' || item.name === 'strength') {
+                    data[item.name] = item.value;
+                }
+            });
+            if (fn(data.coffee, data.strength)) {
+                event.target.setCustomValidity('');
+            } else {
+                var message = 'Decaf drinks must have a Caffeine level under 20';
+                event.target.setCustomValidity(message);
+            }
+        }.bind(this));
+        this.$formElement.on('change', '[name="strength"]', function(event) {
+            var data = {};
+            this.$formElement.serializeArray().forEach(function(item) {
+                if (item.name === 'coffee' || item.name === 'strength') {
+                    data[item.name] = item.value;
+                }
+            });
+            if (fn(data.coffee, data.strength)) {
+                if (coffee) {
+                    coffee.setCustomValidity('');
+                }
+                event.target.setCustomValidity('');
+            } else {
+                var message = 'Decaf drinks must have a Caffeine level under 20';
+                event.target.setCustomValidity(message);
+            }
+        }.bind(this));
     };
 
-    DataStore.prototype.remove = function(key) {
-        delete this.data[key];
-        return promiseResolvedWith(null);
-    };
-
-    App.DataStore = DataStore;
+    App.FormHandler = FormHandler;
     window.App = App;
 })(window);
